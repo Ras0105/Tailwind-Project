@@ -1,141 +1,640 @@
-    // =========================
-    // SIDEBAR
-    // =========================
+//========================================
+// ELEMENT SELECTION
+// =========================================
 
-    const sidebar = document.getElementById("sidebar");
+// SIDEBAR
 
-    const menuBtn = document.getElementById("menuBtn");
+const sidebar =
+    document.getElementById("sidebar");
 
-    const closeBtn = document.getElementById("closeBtn");
+const menuBtn =
+    document.getElementById("menuBtn");
 
-    const overlay = document.getElementById("overlay");
+const closeBtn =
+    document.getElementById("closeBtn");
 
-    menuBtn.addEventListener("click", () => {
-
-        sidebar.classList.remove("-translate-x-full");
-
-        overlay.classList.remove("hidden");
-
-    });
-
-    closeBtn.addEventListener("click", () => {
-
-        sidebar.classList.add("-translate-x-full");
-
-        overlay.classList.add("hidden");
-
-    });
-
-    overlay.addEventListener("click", () => {
-
-        sidebar.classList.add("-translate-x-full");
-
-        overlay.classList.add("hidden");
-
-    });
+const overlay =
+    document.getElementById("overlay");
 
 
-    // =========================
-    // CHAT SYSTEM
-    // =========================
+// CHAT
 
-    const sendBtn = document.getElementById("sendBtn");
+const sendBtn =
+    document.getElementById("sendBtn");
 
-    const messageInput = document.getElementById("messageInput");
+const messageInput =
+    document.getElementById("messageInput");
 
-    const chatArea = document.getElementById("chatArea");
+const chatArea =
+    document.getElementById("chatArea");
 
+const newChatBtn =
+    document.getElementById("newChatBtn");
 
-    // SEND MESSAGE FUNCTION
-
-    function sendMessage() {
-
-        const message = messageInput.value.trim();
-
-        if (message === "") return;
+const chatHistory =
+    document.getElementById("chatHistory");
 
 
-        // =====================
-        // USER MESSAGE
-        // =====================
+// =========================================
+// APPLICATION STATE
+// =========================================
 
-        const userWrapper = document.createElement("div");
+let conversations = [];
 
-        userWrapper.className = "flex justify-end";
+let currentConversationId = null;
 
 
-        const userMessage = document.createElement("div");
+// =========================================
+// SAVE CONVERSATIONS
+// =========================================
 
-        userMessage.className = `
+function saveConversations() {
+
+    localStorage.setItem(
+        "aiConversations",
+        JSON.stringify(conversations)
+    );
+
+}
+
+
+// =========================================
+// LOAD CONVERSATIONS
+// =========================================
+
+function loadConversations() {
+
+    
+
+    const savedConversations =
+        localStorage.getItem(
+            "aiConversations"
+        );
+
+
+    // NO SAVED DATA
+
+    if (!savedConversations) {
+
+        createNewChat();
+
+        return;
+
+    }
+
+
+    // LOAD DATA
+
+    conversations =
+        JSON.parse(savedConversations);
+
+
+    // OPEN FIRST CHAT
+
+    currentConversationId =
+        conversations[0].id;
+
+
+    renderSidebar();
+
+    loadCurrentConversation();
+
+}
+
+
+// =========================================
+// CREATE NEW CHAT
+// =========================================
+
+function createNewChat() {
+
+    const newConversation = {
+
+        id: Date.now(),
+
+        title: `Chat ${conversations.length + 1}`,
+
+        messages: []
+
+    };
+
+
+    // SAVE NEW CONVERSATION
+
+    conversations.unshift(
+        newConversation
+    );
+
+
+    // SET ACTIVE CHAT
+
+    currentConversationId =
+        newConversation.id;
+
+
+    // SAVE
+
+    saveConversations();
+
+
+    // UPDATE UI
+
+    renderSidebar();
+
+    clearChatArea();
+
+}
+
+
+// =========================================
+// RENDER SIDEBAR
+// =========================================
+
+function renderSidebar() {
+
+    // CLEAR OLD SIDEBAR
+
+    chatHistory.innerHTML = "";
+
+
+    conversations.forEach(
+        (conversation) => {
+
+            const chatItem =
+                document.createElement("div");
+
+
+            chatItem.className = `
+                bg-zinc-800
+                p-3
+                rounded-lg
+                cursor-pointer
+                hover:bg-zinc-700
+                transition
+            `;
+
+
+            // ACTIVE CHAT STYLE
+
+            if (
+                conversation.id ===
+                currentConversationId
+            ) {
+
+                chatItem.classList.add(
+                    "border",
+                    "border-blue-500"
+                );
+
+            }
+
+
+            // CHAT TITLE
+
+            chatItem.textContent =
+                conversation.title;
+
+
+            // CLICK EVENT
+
+            chatItem.addEventListener(
+                "click",
+                () => {
+
+                    currentConversationId =
+                        conversation.id;
+
+                    renderSidebar();
+
+                    loadCurrentConversation();
+
+                }
+            );
+
+
+            // APPEND
+
+            chatHistory.appendChild(
+                chatItem
+            );
+
+        }
+    );
+
+}
+
+
+// =========================================
+// GET CURRENT CONVERSATION
+// =========================================
+
+function getCurrentConversation() {
+
+    return conversations.find(
+        (conversation) =>
+            conversation.id ===
+            currentConversationId
+    );
+
+}
+
+
+// =========================================
+// CLEAR CHAT AREA
+// =========================================
+
+function clearChatArea() {
+
+    chatArea.innerHTML = "";
+
+}
+
+
+// =========================================
+// LOAD CURRENT CONVERSATION
+// =========================================
+
+function loadCurrentConversation() {
+
+    clearChatArea();
+
+
+    const currentConversation =
+        getCurrentConversation();
+
+
+    if (!currentConversation) return;
+
+
+    // EMPTY CHAT STATE
+
+    if (
+        currentConversation.messages.length === 0
+    ) {
+
+        const emptyState =
+            document.createElement("div");
+
+
+        emptyState.className = `
+            h-full
+            flex
+            items-center
+            justify-center
+            text-zinc-500
+            text-2xl
+            font-semibold
+        `;
+
+
+        emptyState.textContent =
+            "What's on your mind? 😄";
+
+
+        chatArea.appendChild(
+            emptyState
+        );
+
+
+        return;
+
+    }
+
+
+    currentConversation.messages.forEach(
+        (message) => {
+
+            renderMessage(
+                message.sender,
+                message.text
+            );
+
+        }
+    );
+
+}
+
+
+// =========================================
+// RENDER MESSAGE
+// =========================================
+
+function renderMessage(sender, text) {
+
+    const wrapper =
+        document.createElement("div");
+
+
+    // ALIGNMENT
+
+    wrapper.className =
+        sender === "user"
+        ? "flex justify-end"
+        : "flex";
+
+
+    // MESSAGE BOX
+
+    const message =
+        document.createElement("div");
+
+
+    message.className =
+        sender === "user"
+        ? `
             bg-blue-600
+            p-4
+            rounded-2xl
+            max-w-2xl
+        `
+        : `
+            bg-zinc-800
             p-4
             rounded-2xl
             max-w-2xl
         `;
 
-        userMessage.textContent = message;
 
-        userWrapper.appendChild(userMessage);
+    // TEXT
 
-        chatArea.appendChild(userWrapper);
-
-
-        // CLEAR INPUT
-
-        messageInput.value = "";
+    message.textContent = text;
 
 
-        // =====================
-        // FAKE AI RESPONSE
-        // =====================
+    // APPEND
 
-        setTimeout(() => {
+    wrapper.appendChild(message);
 
-            const aiWrapper = document.createElement("div");
-
-            aiWrapper.className = "flex";
+    chatArea.appendChild(wrapper);
 
 
-            const aiMessage = document.createElement("div");
+    // AUTO SCROLL
 
-            aiMessage.className = `
-                bg-zinc-800
-                p-4
-                rounded-2xl
-                max-w-2xl
-            `;
+    chatArea.scrollTop =
+        chatArea.scrollHeight;
 
-            aiMessage.textContent =
-                "I received your message 😄";
+}
 
 
-            aiWrapper.appendChild(aiMessage);
+// =========================================
+// SHOW TYPING INDICATOR
+// =========================================
 
-            chatArea.appendChild(aiWrapper);
+function showTypingIndicator() {
 
-
-            // AUTO SCROLL
-
-            chatArea.scrollTop = chatArea.scrollHeight;
-
-        }, 500);
+    const typingWrapper =
+        document.createElement("div");
 
 
-        // AUTO SCROLL
+    typingWrapper.className = "flex";
 
-        chatArea.scrollTop = chatArea.scrollHeight;
+    typingWrapper.id =
+        "typingIndicator";
+
+
+    const typingMessage =
+        document.createElement("div");
+
+
+    typingMessage.className = `
+        bg-zinc-800
+        p-4
+        rounded-2xl
+        max-w-2xl
+        animate-pulse
+    `;
+
+
+    typingMessage.textContent =
+        "AI is typing...";
+
+
+    typingWrapper.appendChild(
+        typingMessage
+    );
+
+    chatArea.appendChild(
+        typingWrapper
+    );
+
+
+    // AUTO SCROLL
+
+    chatArea.scrollTop =
+        chatArea.scrollHeight;
+
+}
+
+
+// =========================================
+// REMOVE TYPING INDICATOR
+// =========================================
+
+function removeTypingIndicator() {
+
+    const typingIndicator =
+        document.getElementById(
+            "typingIndicator"
+        );
+
+
+    if (typingIndicator) {
+
+        typingIndicator.remove();
 
     }
 
-
-    // =========================
-    // EVENTS
-    // =========================
-
-    sendBtn.addEventListener("click", sendMessage);
+}
 
 
-    messageInput.addEventListener("keydown", (event) => {
+// =========================================
+// SEND MESSAGE
+// =========================================
+
+function sendMessage() {
+
+    const message =
+        messageInput.value.trim();
+
+
+    // EMPTY MESSAGE
+
+    if (message === "") return;
+
+
+    // CURRENT CONVERSATION
+
+    const currentConversation =
+        getCurrentConversation();
+
+
+    if (!currentConversation) return;
+
+
+    // USER MESSAGE OBJECT
+
+    const userMessage = {
+
+        sender: "user",
+
+        text: message
+
+    };
+
+
+    // SAVE MESSAGE
+
+    currentConversation.messages.push(
+        userMessage
+    );
+
+    // REMOVE EMPTY STATE
+
+    chatArea.innerHTML = "";
+    
+    // RENDER
+
+    renderMessage(
+        "user",
+        message
+    );
+
+
+    // SAVE STORAGE
+
+    saveConversations();
+
+
+    // CLEAR INPUT
+
+    messageInput.value = "";
+
+
+    // TYPING INDICATOR
+
+    showTypingIndicator();
+
+
+    // FAKE AI RESPONSE
+
+    setTimeout(() => {
+
+        removeTypingIndicator();
+
+
+        const aiReply =
+            "I received your message 😄";
+
+
+        // AI MESSAGE OBJECT
+
+        const aiMessage = {
+
+            sender: "ai",
+
+            text: aiReply
+
+        };
+
+
+        // SAVE
+
+        currentConversation.messages.push(
+            aiMessage
+        );
+
+
+        // RENDER
+
+        renderMessage(
+            "ai",
+            aiReply
+        );
+
+
+        // SAVE STORAGE
+
+        saveConversations();
+
+    }, 1500);
+
+}
+
+
+// =========================================
+// SIDEBAR EVENTS
+// =========================================
+
+// OPEN SIDEBAR
+
+menuBtn.addEventListener(
+    "click",
+    () => {
+
+        sidebar.classList.remove(
+            "-translate-x-full"
+        );
+
+        overlay.classList.remove(
+            "hidden"
+        );
+
+    }
+);
+
+
+// CLOSE SIDEBAR
+
+closeBtn.addEventListener(
+    "click",
+    () => {
+
+        sidebar.classList.add(
+            "-translate-x-full"
+        );
+
+        overlay.classList.add(
+            "hidden"
+        );
+
+    }
+);
+
+
+// CLOSE USING OVERLAY
+
+overlay.addEventListener(
+    "click",
+    () => {
+
+        sidebar.classList.add(
+            "-translate-x-full"
+        );
+
+        overlay.classList.add(
+            "hidden"
+        );
+
+    }
+);
+
+
+// =========================================
+// CHAT EVENTS
+// =========================================
+
+// SEND BUTTON
+
+sendBtn.addEventListener(
+    "click",
+    sendMessage
+);
+
+
+// ENTER KEY
+
+messageInput.addEventListener(
+    "keydown",
+    (event) => {
 
         if (event.key === "Enter") {
 
@@ -143,5 +642,20 @@
 
         }
 
-    });
+    }
+);
 
+
+// NEW CHAT BUTTON
+
+newChatBtn.addEventListener(
+    "click",
+    createNewChat
+);
+
+
+// =========================================
+// INITIALIZE APP
+// =========================================
+
+loadConversations();
